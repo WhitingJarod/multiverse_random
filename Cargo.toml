@@ -3,5 +3,8 @@ name = "multiverse_random"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+no_size_hints = []
+
 [dependencies]
 libc = "0.2.168"
