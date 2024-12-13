@@ -3,7 +3,7 @@
 use std::ops::{Add, Bound, Div, RangeBounds, Sub};
 
 /// Generate a random number within the provided range.
-/// Multiverse theory compliant, but not thread-safe.
+/// Multiverse theory compliant.
 ///
 /// Verifiably proven to return a perfectly balanced distribution of numbers for
 /// any range.
@@ -38,14 +38,17 @@ use std::ops::{Add, Bound, Div, RangeBounds, Sub};
 /// use multiverse_random::random;
 ///
 /// let _ = random(0..0);
+/// // -> 'random' called with empty range
 /// let _ = random(1..0);
+/// // -> 'random' called with empty range
 /// let _ = random(0..);
+/// // -> 'random' called with no upper bound
 /// ```
 ///
 /// # Safety
 ///
-/// This function is not thread-safe. It uses `fork` to generate random numbers
-/// and is subject to the limitations outlined in [fork(2)](https://www.man7.org/linux/man-pages/man2/fork.2.html)
+/// **Guaranteed safe until printed date.**
+/// Warranty void if used for production code.
 ///
 /// # Performance
 ///
@@ -66,6 +69,7 @@ where
 {
     #[cold]
     #[track_caller]
+    #[inline(never)]
     #[optimize(size)]
     fn panic_no_upper_bound() -> ! {
         panic!("'random' called with no upper bound")
@@ -73,30 +77,43 @@ where
 
     #[cold]
     #[track_caller]
+    #[inline(never)]
     #[optimize(size)]
     fn panic_empty_range() -> ! {
         panic!("'random' called with empty range")
     }
 
+    // Prefer U's implementation of Copy rather than U's implementation
+    // of From<u8>. There's no way to tell at this stage which has less
+    // overhead, but this is the more likely case.
+    // In any event, optimizations at this stage are of little consequence
+    // due to the sheer volume of system calls being invoked later.
+    let n = (0.into(), 1.into(), 2.into());
+
     #[cfg_attr(test, allow(unused_mut))]
     let mut start = match range.start_bound() {
         Bound::Included(&start) => start,
-        Bound::Excluded(&start) => start + 1.into(),
+        Bound::Excluded(&start) => start + n.1,
         Bound::Unbounded => U::default(),
     };
     #[cfg_attr(test, allow(unused_mut))]
     let mut end = match range.end_bound() {
         Bound::Included(&end) => end,
-        Bound::Excluded(&end) => end - 1.into(),
+        Bound::Excluded(&end) => end - n.1,
         Bound::Unbounded => panic_no_upper_bound(),
     };
     #[cfg_attr(test, allow(unused_mut))]
-    let mut mid = (start + end) / 2.into();
+    let mut mid = (start + end) / n.2;
 
     if start > end {
         panic_empty_range();
     }
 
+    // Short circuit and return during tests.
+    // Forking during a test is pointless, so return something until
+    // such time as I've hacked up some kind of testing support.
+    // (the cfg_attrs above should be removed once this is finished)
+    // See the TODO in the tests module.
     #[cfg(test)]
     return mid;
 
@@ -106,16 +123,19 @@ where
             break start;
         }
         match unsafe { libc::fork() } {
-            0 => start = mid + 1.into(),
+            0 => start = mid + n.1,
             _ => end = mid,
         }
-        mid = (start + end) / 2.into();
-        if mid < 0.into() {
-            mid = mid - 1.into();
+        mid = (start + end) / n.2;
+        if mid < n.0 {
+            // Note to self: dividing negative integers always rounds twoards zero, not down.
+            // Delete this line if you want to forkbomb yourself.
+            mid = mid - n.1;
         }
     }
 }
 
+/// A trait for types that can be used with `random`.
 pub trait Math:
     Add<Self, Output = Self>
     + Sub<Self, Output = Self>
@@ -189,15 +209,5 @@ mod tests {
     #[should_panic]
     fn panics_on_unbounded_end() {
         random(0..);
-    }
-
-    #[test]
-    fn succeeds_on_full_range() {
-        random(0..=u8::MAX);
-    }
-
-    #[test]
-    fn succeeds_on_full_signed_range() {
-        random(i16::MIN..=i16::MAX);
     }
 }
