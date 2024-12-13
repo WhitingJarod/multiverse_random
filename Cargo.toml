@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
+default = ["no_size_hints"]
 no_size_hints = []
 
 [dependencies]

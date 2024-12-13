@@ -8,9 +8,10 @@
 ///
 /// # Panics
 ///
-/// Panics if the provided iterator has more than `isize::MAX` items,
-/// or if the iterator does not provide size hints. (This latter check can be
-/// disabled by including the `no_size_hints` feature.)
+/// Panics if the provided iterator has more than `isize::MAX` items.
+///
+/// For testing purposes, the function may also panic if size hints are not available.
+/// To enable these panics, disable the `no_size_hints` feature.
 ///
 /// # Examples
 ///
@@ -60,7 +61,7 @@
 #[track_caller]
 #[optimize(size)]
 #[must_use = "if you don't need the result, use a different system for multithreading"]
-pub fn random<T, U>(range: U) -> T
+pub fn random<T, U>(items: U) -> T
 where
     U: IntoIterator<Item = T>,
 {
@@ -79,7 +80,7 @@ where
     #[track_caller]
     #[inline(never)]
     #[optimize(size)]
-    #[cfg(not(feature = "no_size_hints"))]
+    #[cfg(any(not(feature = "no_size_hints"), test))]
     fn panic_no_size_hints() -> ! {
         #[cfg(test)]
         panic!("the iterator sent to 'random' is not providing size hints. enable feature 'no_size_hints' to disable this check.");
@@ -98,7 +99,7 @@ where
         std::process::exit(0);
     }
 
-    let range = range.into_iter();
+    let range = items.into_iter();
 
     if let (_, Some(len)) = range.size_hint() {
         if len > isize::MAX as usize {
@@ -110,7 +111,7 @@ where
             return range.next().unwrap();
         }
     } else {
-        #[cfg(not(feature = "no_size_hints"))]
+        #[cfg(any(not(feature = "no_size_hints"), test))]
         panic_no_size_hints();
     }
 
