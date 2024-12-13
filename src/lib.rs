@@ -15,12 +15,31 @@ use std::ops::{Add, Bound, Div, RangeBounds, Sub};
 ///
 /// # Examples
 ///
+/// Basic usage is straightforward:
 /// ```
 /// use multiverse_random::random;
 ///
 /// let strings = ["foo", "bar", "baz"];
-/// let index = random(0..strings.len());
+/// let index = random(..strings.len());
 /// println!("Random string: {}", strings[index]);
+/// ```
+/// The function accepts standard range types:
+/// ```
+/// use multiverse_random::random;
+///
+/// let _ = random(-2..=-1);
+/// let _ = random(..10);
+/// let _ = random(0..=0);
+/// ```
+///
+/// But it will fail on empty or inverted ranges or if the upper bound is not
+/// specified:
+/// ```should_panic
+/// use multiverse_random::random;
+///
+/// let _ = random(0..0);
+/// let _ = random(1..0);
+/// let _ = random(0..);
 /// ```
 ///
 /// # Safety
@@ -59,16 +78,19 @@ where
         panic!("'random' called with empty range")
     }
 
+    #[cfg_attr(test, allow(unused_mut))]
     let mut start = match range.start_bound() {
         Bound::Included(&start) => start,
         Bound::Excluded(&start) => start + 1.into(),
         Bound::Unbounded => U::default(),
     };
+    #[cfg_attr(test, allow(unused_mut))]
     let mut end = match range.end_bound() {
         Bound::Included(&end) => end,
         Bound::Excluded(&end) => end - 1.into(),
         Bound::Unbounded => panic_no_upper_bound(),
     };
+    #[cfg_attr(test, allow(unused_mut))]
     let mut mid = (start + end) / 2.into();
 
     if start > end {
@@ -78,7 +100,7 @@ where
     #[cfg(test)]
     return mid;
 
-    #[cfg(not(test))]
+    #[cfg_attr(test, allow(unreachable_code))]
     loop {
         if start >= end {
             break start;
@@ -88,6 +110,9 @@ where
             _ => end = mid,
         }
         mid = (start + end) / 2.into();
+        if mid < 0.into() {
+            mid = mid - 1.into();
+        }
     }
 }
 
