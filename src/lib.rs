@@ -2,7 +2,7 @@
 
 use std::ops::{Add, Bound, Div, RangeBounds, Sub};
 
-/// Generate a random number between 0 (inclusive) and `range` (exclusive).
+/// Generate a random number within the provided range.
 /// Multiverse theory compliant, but not thread-safe.
 ///
 /// Verifiably proven to return a perfectly balanced distribution of numbers for
@@ -51,10 +51,10 @@ use std::ops::{Add, Bound, Div, RangeBounds, Sub};
 ///
 /// This function makes heavy use of system calls and should be used sparingly.
 ///
-/// Specifically, the function requires `log2(n)` system calls to generate the
+/// Specifically, the function requires `log2 n` system calls to generate the
 /// random number, where `n` is the size of the range.
 ///
-/// Worst-case memory usage is also `log2(n)`.
+/// Worst-case memory usage is also `O(log2 n)`.
 ///
 #[inline]
 #[track_caller]
