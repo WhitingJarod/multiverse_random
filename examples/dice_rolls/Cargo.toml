@@ -1,0 +1,7 @@
+[package]
+name = "dice_rolls"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiverse_random = { path = "../../" }

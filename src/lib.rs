@@ -1,4 +1,5 @@
 #![feature(optimize_attribute)]
+use std::fmt::Debug;
 
 /// Select a random number or item from the provided range.
 /// Multiverse theory compliant.
@@ -63,6 +64,7 @@
 #[must_use = "if you don't need the result, use a different system for multithreading"]
 pub fn random<T, U>(items: U) -> T
 where
+    T: Debug,
     U: IntoIterator<Item = T>,
 {
     #[cold]
@@ -116,8 +118,8 @@ where
     }
 
     let set = range.collect::<Vec<T>>();
-    let end = set.len();
 
+    let end = set.len();
     if end == 0 {
         exit_no_choices();
     }
@@ -137,14 +139,14 @@ where
 
     #[cfg_attr(test, allow(unreachable_code))]
     loop {
-        if start == end {
+        if start + 1 >= end {
             break unsafe { std::ptr::read(set.offset(start)) };
         }
         match unsafe { libc::fork() } {
-            0 => start = mid + 1,
+            0 => start = mid,
             _ => end = mid,
         }
-        mid = (start + end) / 2;
+        mid = (start + end) >> 1;
     }
 }
 
