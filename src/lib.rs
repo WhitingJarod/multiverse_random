@@ -53,11 +53,6 @@ use std::fmt::Debug;
 ///
 /// This function makes heavy use of system calls and should be used sparingly.
 ///
-/// Specifically, the function requires `log2 n` system calls to generate the
-/// random item, where `n` is the number of items.
-///
-/// Worst-case memory usage is also `O(log2 n)`.
-///
 #[inline]
 #[track_caller]
 #[optimize(size)]
